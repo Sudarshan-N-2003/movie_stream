@@ -26,6 +26,37 @@ if ($result->num_rows === 0) {
 }
 
 $movie = $result->fetch_assoc();
+// --- WATCH HISTORY INSERT / UPDATE ---
+$user_id = $_SESSION['user_id'];
+
+// Check if already exists
+$check = $conn->prepare("
+    SELECT id FROM watch_history 
+    WHERE user_id = ? AND movie_id = ?
+");
+$check->bind_param("ii", $user_id, $movie_id);
+$check->execute();
+$checkResult = $check->get_result();
+
+if ($checkResult->num_rows > 0) {
+    // Update last watched time
+    $update = $conn->prepare("
+        UPDATE watch_history 
+        SET last_watched = NOW() 
+        WHERE user_id = ? AND movie_id = ?
+    ");
+    $update->bind_param("ii", $user_id, $movie_id);
+    $update->execute();
+} else {
+    // Insert new watch record
+    $insert = $conn->prepare("
+        INSERT INTO watch_history (user_id, movie_id, watch_percentage)
+        VALUES (?, ?, 0)
+    ");
+    $insert->bind_param("ii", $user_id, $movie_id);
+    $insert->execute();
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,3 +157,4 @@ iframe {
 <script src="script.js"></script>
 </body>
 </html>
+
